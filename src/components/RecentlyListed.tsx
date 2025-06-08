@@ -63,8 +63,22 @@ query AllItemListeds {
   }
 }`
 
+// async function fetchNFTs(): Promise<NFTQueryResponse> {
+//     const response = await fetch("/api/graphql", {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//             query: GET_RECENT_NFTS,
+//         }),
+//     })
+//     return response.json()
+// }
+// console.log(await fetchNFTs())
+
 async function fetchNFTs(): Promise<NFTQueryResponse> {
-    const response = await fetch("/api/graphql", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_GRAPHQL_API_URL}/api/graphql`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -73,9 +87,13 @@ async function fetchNFTs(): Promise<NFTQueryResponse> {
             query: GET_RECENT_NFTS,
         }),
     })
+
+    if (!response.ok) {
+        throw new Error(`GraphQL fetch failed: ${response.statusText}`)
+    }
+
     return response.json()
 }
-console.log(await fetchNFTs())
 
 function useRecentlyListedNFTs() {
     const { data, isLoading, error } = useQuery<NFTQueryResponse>({
