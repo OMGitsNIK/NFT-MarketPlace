@@ -22,6 +22,8 @@ export default function BuyNftPage() {
     }
     const { address } = useAccount()
     const chainId = useChainId()
+    const [isCompliant, setIsCompliant] = useState<boolean | null>(null)
+    const [isCheckingCompliance, setIsCheckingCompliance] = useState(false)
 
     const marketplaceAddress =
         (chainsToContracts[chainId]?.nftMarketplace as `0x${string}`) || "0x"
@@ -107,6 +109,34 @@ export default function BuyNftPage() {
         }
     }
 
+    const checkCompliance = async () => {
+        if (!address) return
+
+        setIsCheckingCompliance(true)
+
+        try {
+            const response = await fetch("/api/compliance", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ address }),
+            })
+
+            const result = await response.json()
+            setIsCompliant(result.success && result.isApproved)
+        } catch (error) {
+            console.error("Compliance check error:", error)
+            setIsCompliant(false)
+        } finally {
+            setIsCheckingCompliance(false)
+        }
+    }
+
+    useEffect(() => {
+        if (address) {
+            checkCompliance()
+        }
+    }, [address])
+
     // Redirect to home if purchase is successful
     useEffect(() => {
         if (step === 3 && isPurchaseSuccess) {
@@ -130,7 +160,24 @@ export default function BuyNftPage() {
                 <div className="max-w-4xl mx-auto">
                     <h1 className="text-3xl font-bold mb-6 text-gray-700">Buy NFT</h1>
 
-                    {!address ? (
+                    {/* Connection Status */}
+                    {isCheckingCompliance ? (
+                        <div className="p-8 bg-white rounded-xl shadow-sm border border-zinc-200 text-center">
+                            <p className="text-zinc-600">Checking compliance...</p>
+                        </div>
+                    ) : isCompliant === false ? (
+                        <div className="p-8 bg-white rounded-xl shadow-sm border border-zinc-200 text-center">
+                            <p className="text-red-600 font-medium">
+                                Your address has been blocked due to compliance restrictions.
+                            </p>
+                            <button
+                                onClick={() => router.push("/")}
+                                className="mt-4 py-2 px-4 bg-blue-600 text-white rounded-md"
+                            >
+                                Back to Home
+                            </button>
+                        </div>
+                    ) : !address ? (
                         <div className="p-8 bg-white rounded-xl shadow-sm border border-zinc-200 text-center">
                             <p className="text-lg text-zinc-600 mb-4">
                                 Connect your wallet to purchase this NFT
